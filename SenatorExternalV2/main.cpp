@@ -236,10 +236,11 @@ int main()
             auto j = nlohmann::json::parse(remote_version_raw);
             if (j.is_string())            remote_version = j.get<std::string>();
             else if (j.contains("version") && j["version"].is_string())
-                                          remote_version = j["version"].get<std::string>();
+                remote_version = j["version"].get<std::string>();
             else if (j.contains("ClientVersion") && j["ClientVersion"].is_string())
-                                          remote_version = j["ClientVersion"].get<std::string>();
-        } catch (...) {
+                remote_version = j["ClientVersion"].get<std::string>();
+        }
+        catch (...) {
             remote_version = remote_version_raw;
         }
         while (!remote_version.empty() && (remote_version.back() == '\n' || remote_version.back() == '\r' || remote_version.back() == ' ' || remote_version.back() == '"'))
@@ -271,7 +272,8 @@ int main()
         try {
             auto j = nlohmann::json::parse(body);
             (void)j;
-        } catch (...) {
+        }
+        catch (...) {
             console_status::statusf("WARN", "Downloaded offsets are invalid. Keeping current offsets.");
             return false;
         }
@@ -290,7 +292,7 @@ int main()
         }
         console_status::statusf("WARN", "Downloaded offsets could not be loaded. Keeping current offsets.");
         return false;
-    };
+        };
 
     probe_and_sync_offsets();
 
@@ -299,7 +301,8 @@ int main()
         if (!robloxVersion.empty() && !expectedVersion.empty() && robloxVersion != expectedVersion) {
             version_mismatch = true;
         }
-    } else {
+    }
+    else {
         if (!robloxVersion.empty() && robloxVersion != Offsets::ClientVersion) {
             version_mismatch = true;
         }
@@ -370,13 +373,13 @@ int main()
         int total = 0, valid = 0, core_failed = 0;
         std::string fails;
         std::string core_fails;
-        #define VFAIL(name) do { fails += "  - " name "\n"; } while(0)
-        #define VFAIL_CORE(name) do { fails += "  - Required: " name "\n"; core_fails += "  - " name "\n"; core_failed++; } while(0)
-        #define VCHECK(name, val) do { total++; if ((val) != 0) valid++; else VFAIL(name); } while(0)
-        #define VCHECK_CORE(name, val) do { total++; if ((val) != 0) valid++; else VFAIL_CORE(name); } while(0)
-        #define VREAD(name, base, off) [&]() -> std::uint64_t { total++; if ((base) == 0) { VFAIL(name); return 0; } try { auto v = memory->read<std::uint64_t>((base) + (off)); if (v != 0) { valid++; return v; } } catch (...) {} VFAIL(name); return 0; }()
-        #define VREAD_CORE(name, base, off) [&]() -> std::uint64_t { total++; if ((base) == 0) { VFAIL_CORE(name); return 0; } try { auto v = memory->read<std::uint64_t>((base) + (off)); if (v != 0) { valid++; return v; } } catch (...) {} VFAIL_CORE(name); return 0; }()
-        #define VFLOAT(name, base, off, lo, hi) do { total++; try { float v = memory->read<float>((base) + (off)); if (v >= (lo) && v <= (hi)) valid++; else VFAIL(name); } catch (...) { VFAIL(name); } } while(0)
+#define VFAIL(name) do { fails += "  - " name "\n"; } while(0)
+#define VFAIL_CORE(name) do { fails += "  - Required: " name "\n"; core_fails += "  - " name "\n"; core_failed++; } while(0)
+#define VCHECK(name, val) do { total++; if ((val) != 0) valid++; else VFAIL(name); } while(0)
+#define VCHECK_CORE(name, val) do { total++; if ((val) != 0) valid++; else VFAIL_CORE(name); } while(0)
+#define VREAD(name, base, off) [&]() -> std::uint64_t { total++; if ((base) == 0) { VFAIL(name); return 0; } try { auto v = memory->read<std::uint64_t>((base) + (off)); if (v != 0) { valid++; return v; } } catch (...) {} VFAIL(name); return 0; }()
+#define VREAD_CORE(name, base, off) [&]() -> std::uint64_t { total++; if ((base) == 0) { VFAIL_CORE(name); return 0; } try { auto v = memory->read<std::uint64_t>((base) + (off)); if (v != 0) { valid++; return v; } } catch (...) {} VFAIL_CORE(name); return 0; }()
+#define VFLOAT(name, base, off, lo, hi) do { total++; try { float v = memory->read<float>((base) + (off)); if (v >= (lo) && v <= (hi)) valid++; else VFAIL(name); } catch (...) { VFAIL(name); } } while(0)
 
         // CORE — bootstrap pointers
         VCHECK_CORE("FakeDataModel::Pointer", startup_state.fake_datamodel);
@@ -435,7 +438,8 @@ int main()
                 total++;
                 if (script_context.address) valid++;
                 else VFAIL("ScriptContext service");
-            } catch (...) {
+            }
+            catch (...) {
                 total++;
                 VFAIL("ScriptContext service");
             }
@@ -443,22 +447,26 @@ int main()
 
         // CORE — Instance walking primitives
         if (game::players.address) {
-            try { auto cs = memory->read<std::uint64_t>(game::players.address + Offsets::Instance::ChildrenStart); auto s = memory->read<std::uint64_t>(cs); auto e = memory->read<std::uint64_t>(cs + Offsets::Instance::ChildrenEnd); total++; if (s && e && e > s) valid++; else VFAIL_CORE("Instance::Children"); } catch (...) { total++; VFAIL_CORE("Instance::Children"); }
-            try { auto np = memory->read<std::uint64_t>(game::players.address + Offsets::Instance::Name); auto n = memory->read_string(np); total++; if (n == "Players") valid++; else VFAIL("Instance::Name"); } catch (...) { total++; VFAIL("Instance::Name"); }
-            try { auto cd = memory->read<std::uint64_t>(game::players.address + Offsets::Instance::ClassDescriptor); auto cn = memory->read<std::uint64_t>(cd + Offsets::Instance::ClassName); auto c = memory->read_string(cn); total++; if (c == "Players") valid++; else VFAIL_CORE("Instance::ClassName"); } catch (...) { total++; VFAIL_CORE("Instance::ClassName"); }
+            try { auto cs = memory->read<std::uint64_t>(game::players.address + Offsets::Instance::ChildrenStart); auto s = memory->read<std::uint64_t>(cs); auto e = memory->read<std::uint64_t>(cs + Offsets::Instance::ChildrenEnd); total++; if (s && e && e > s) valid++; else VFAIL_CORE("Instance::Children"); }
+            catch (...) { total++; VFAIL_CORE("Instance::Children"); }
+            try { auto np = memory->read<std::uint64_t>(game::players.address + Offsets::Instance::Name); auto n = memory->read_string(np); total++; if (n == "Players") valid++; else VFAIL("Instance::Name"); }
+            catch (...) { total++; VFAIL("Instance::Name"); }
+            try { auto cd = memory->read<std::uint64_t>(game::players.address + Offsets::Instance::ClassDescriptor); auto cn = memory->read<std::uint64_t>(cd + Offsets::Instance::ClassName); auto c = memory->read_string(cn); total++; if (c == "Players") valid++; else VFAIL_CORE("Instance::ClassName"); }
+            catch (...) { total++; VFAIL_CORE("Instance::ClassName"); }
         }
 
         if (local_player) { try { auto m = rbx::player_t(local_player).get_model_instance(); if (m.address) { auto h = rbx::instance_t(m.address).find_first_child("Humanoid"); if (h.address) { VFLOAT("Humanoid::Health", h.address, Offsets::Humanoid::Health, 0.0f, 1000000.0f); VFLOAT("Humanoid::MaxHealth", h.address, Offsets::Humanoid::MaxHealth, 0.1f, 1000000.0f); VFLOAT("Humanoid::Walkspeed", h.address, Offsets::Humanoid::Walkspeed, 0.0f, 10000.0f); VFLOAT("Humanoid::JumpPower", h.address, Offsets::Humanoid::JumpPower, 0.0f, 10000.0f); } } } catch (...) {} }
 
-        try { auto ts = memory->read<std::uint64_t>(memory->get_module_address() + Offsets::TaskScheduler::Pointer); total++; if (ts) valid++; else VFAIL("TaskScheduler::Pointer"); } catch (...) { total++; VFAIL("TaskScheduler::Pointer"); }
+        try { auto ts = memory->read<std::uint64_t>(memory->get_module_address() + Offsets::TaskScheduler::Pointer); total++; if (ts) valid++; else VFAIL("TaskScheduler::Pointer"); }
+        catch (...) { total++; VFAIL("TaskScheduler::Pointer"); }
 
-        #undef VFAIL
-        #undef VFAIL_CORE
-        #undef VCHECK
-        #undef VCHECK_CORE
-        #undef VREAD
-        #undef VREAD_CORE
-        #undef VFLOAT
+#undef VFAIL
+#undef VFAIL_CORE
+#undef VCHECK
+#undef VCHECK_CORE
+#undef VREAD
+#undef VREAD_CORE
+#undef VFLOAT
 
         char summary[96];
         snprintf(summary, sizeof(summary), "=== %d/%d offsets valid (%d core failures) ===\n", valid, total, core_failed);
@@ -628,7 +636,7 @@ int main()
         settings::cilent::fpscaps::enabled = false;
 
         console_status::statusf("OK", "Panic key pressed. All toggleable features were disabled.");
-    };
+        };
 
     while (runtime::alive())
     {

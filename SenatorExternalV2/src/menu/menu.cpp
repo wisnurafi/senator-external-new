@@ -929,12 +929,10 @@ void Menu::DrawMenu()
 
                         ImAdd::CheckBox("Clock Time", &settings::lighting::clocktime::enabled);
 
-                        ImAdd::CheckBox("Skybox", &settings::lighting::skybox::enabled);
-
-                        if (settings::lighting::skybox::enabled)
-                        {
-                            ImAdd::Combo("Preset##skybox", &settings::lighting::skybox::preset_index, lighting::skybox::preset_names());
-                        }
+                        settings::lighting::skybox::enabled = false;
+                        ImGui::BeginDisabled();
+                        ImAdd::CheckBox("Skybox (Coming Soon)", &settings::lighting::skybox::enabled);
+                        ImGui::EndDisabled();
 
                         if (settings::lighting::clocktime::enabled)
                         {

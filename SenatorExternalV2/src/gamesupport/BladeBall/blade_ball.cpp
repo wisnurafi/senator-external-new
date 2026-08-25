@@ -22,6 +22,26 @@
 #include <Offsets/Offsets.hpp>
 #include <sdk/sdk.h>
 #include <imgui/imgui.h>
+
+/*
+ * Dear future me and anyone else who reads this code
+ *
+ * I'm sorry.
+ *
+ * At the time of writing this,
+ * the code magically works.
+ *
+ * I spent hours debugging,
+ * sacrificed my sleep,
+ * and somehow everything started working.
+ *
+ * I don't know why.
+ * You probably won't either.
+ *
+ * Please don't be overconfident.
+ * One semicolon away from disaster.
+ */
+
 namespace gamesupport::blade_ball
 {
     namespace {
@@ -297,7 +317,7 @@ namespace gamesupport::blade_ball
             const float fast_ball_factor = ClampFloat((info.filtered_speed - 140.0f) / 180.0f, 0.0f, 1.0f);
             const float closing_factor = ClampFloat((info.closing_speed - 45.0f) / 120.0f, 0.0f, 1.0f);
             info.parry_distance_threshold =
-                settings::blade_ball::parry_distance +
+                settings::blade_ball::parry_distance + 
                 (fast_ball_factor * 7.0f) +
                 (closing_factor * 4.0f);
             info.parry_height_threshold =
@@ -981,7 +1001,7 @@ namespace gamesupport::blade_ball
                 ? most_dangerous->time_to_intercept
                 : most_dangerous->time_to_reach;
 
-            float reaction_buffer = 0.038f;
+            float reaction_buffer = 0.038f; // idk why it's work, but don't touch it
             reaction_buffer += ClampFloat(most_dangerous->filtered_speed / 280.0f, 0.0f, 1.0f) * 0.022f;
             reaction_buffer += ClampFloat(most_dangerous->filtered_speed / 180.0f, 0.0f, 1.0f) * 0.018f;
             reaction_buffer += ClampFloat(Length(most_dangerous->acceleration) / 320.0f, 0.0f, 1.0f) * 0.010f;

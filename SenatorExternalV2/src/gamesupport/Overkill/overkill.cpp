@@ -124,7 +124,7 @@ namespace
 		{
 			for (const auto& part : entity.parts)
 			{
-				if (part.second.address)
+				if (part.second.address)3
 				{
 					entity.parts["HumanoidRootPart"] = part.second;
 					break;

@@ -4,11 +4,11 @@
     "menu_keybind": "insert",
     "watermark": true,
     "watermark_show_game_name": true,
-    "watermark_pos_x": 1481,
-    "watermark_pos_y": 35,
+    "watermark_pos_x": 1574,
+    "watermark_pos_y": -1,
     "keybinds": true,
-    "feature_list_pos_x": 16,
-    "feature_list_pos_y": 96,
+    "feature_list_pos_x": 24,
+    "feature_list_pos_y": 87,
     "streamproof": false,
     "vsync": false,
     "performance_mode": false
@@ -98,6 +98,9 @@
     "rapidfire": false,
     "hipheight_enabled": false,
     "hipheight_height": 51.8,
+    "thirdperson_enabled": false,
+    "thirdperson_distance": 13.9,
+    "thirdperson_height_offset": 2.3,
     "spin360_enabled": false,
     "spin360_speed": 5,
     "spin360_keybind": 0,
@@ -129,7 +132,7 @@
     "nojumpcooldown": false
   },
   "visuals": {
-    "preview_3d": true,
+    "preview_3d": false,
     "enable_enemies": true,
     "enable_client": false,
     "use_team_color": true,
@@ -196,8 +199,8 @@
     "client_chams_outline_color": [1, 1, 1, 1],
     "client_flags": false,
     "client_flags_state_colour": [1, 1, 1, 1],
-    "client_headless": true,
-    "client_korblox": true,
+    "client_headless": false,
+    "client_korblox": false,
     "debug_wallcheck": false,
     "view_hitbox": false,
     "view_hitbox_color": [1, 0, 0, 1],
@@ -219,10 +222,10 @@
     "activation_mode": 1
     },
     "flyhack": {
-    "enabled": false,
+    "enabled": true,
     "mode": 0,
-    "speed": 50,
-    "keybind": 0,
+    "speed": 103.8,
+    "keybind": 32,
     "activation_mode": 1
     },
     "tickrate": {
@@ -267,5 +270,9 @@
     "clocktime": {
     "enabled": false,
     "clock_time": 14
+    },
+    "skybox": {
+    "enabled": false,
+    "preset_index": 0
     }
   }

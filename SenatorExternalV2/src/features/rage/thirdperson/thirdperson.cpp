@@ -6,27 +6,22 @@
 #include <Offsets/Offsets.hpp>
 #include <runtime/runtime.h>
 #include <settings.h>
+#include <sdk/math/math.h>
 
 #include <algorithm>
 #include <chrono>
 #include <cstdint>
 #include <mutex>
 #include <thread>
+#include <cmath>
 
 namespace
 {
 	struct thirdperson_state_t
 	{
-		std::uint64_t player{ 0 };
-		std::uint64_t humanoid{ 0 };
-
-		bool has_player_original{ false };
-		bool has_humanoid_original{ false };
-
-		std::int32_t camera_mode{ 0 };
-		float min_zoom{ 0.0f };
-		float max_zoom{ 0.0f };
-		math::vector3 camera_offset{};
+		std::uint64_t camera{ 0 };
+		bool has_camera_original{ false };
+		std::int32_t original_camera_type{ 0 };
 	};
 
 	thirdperson_state_t g_state{};
@@ -36,84 +31,40 @@ namespace
 		g_state = {};
 	}
 
-	void restore_player()
+	void restore_camera()
 	{
-		if (!g_state.player || !g_state.has_player_original)
+		if (!g_state.camera || !g_state.has_camera_original)
 			return;
 
 		try
 		{
-			memory->write<std::int32_t>(g_state.player + Offsets::Player::CameraMode, g_state.camera_mode);
-			memory->write<float>(g_state.player + Offsets::Player::MinZoomDistance, g_state.min_zoom);
-			memory->write<float>(g_state.player + Offsets::Player::MaxZoomDistance, g_state.max_zoom);
+			memory->write<std::int32_t>(g_state.camera + Offsets::Camera::CameraType, g_state.original_camera_type);
 		}
 		catch (...) {}
 
-		g_state.has_player_original = false;
-	}
-
-	void restore_humanoid()
-	{
-		if (!g_state.humanoid || !g_state.has_humanoid_original)
-			return;
-
-		try
-		{
-			memory->write<math::vector3>(g_state.humanoid + Offsets::Humanoid::CameraOffset, g_state.camera_offset);
-		}
-		catch (...) {}
-
-		g_state.has_humanoid_original = false;
+		g_state.has_camera_original = false;
 	}
 
 	void restore_all()
 	{
-		restore_player();
-		restore_humanoid();
+		restore_camera();
 		reset_state();
 	}
 
-	void capture_player_original(std::uint64_t player)
+	void capture_camera_original()
 	{
-		if (g_state.player == player && g_state.has_player_original)
+		if (g_state.has_camera_original)
 			return;
 
-		restore_player();
-
-		g_state.player = player;
-		g_state.camera_mode = memory->read<std::int32_t>(player + Offsets::Player::CameraMode);
-		g_state.min_zoom = memory->read<float>(player + Offsets::Player::MinZoomDistance);
-		g_state.max_zoom = memory->read<float>(player + Offsets::Player::MaxZoomDistance);
-		g_state.has_player_original = true;
-	}
-
-	void capture_humanoid_original(std::uint64_t humanoid)
-	{
-		if (g_state.humanoid == humanoid && g_state.has_humanoid_original)
+		if (!game::camera || game::camera == 0)
 			return;
 
-		restore_humanoid();
-
-		g_state.humanoid = humanoid;
-		g_state.camera_offset = memory->read<math::vector3>(humanoid + Offsets::Humanoid::CameraOffset);
-		g_state.has_humanoid_original = true;
+		g_state.camera = game::camera;
+		g_state.original_camera_type = memory->read<std::int32_t>(game::camera + Offsets::Camera::CameraType);
+		g_state.has_camera_original = true;
 	}
 
-	std::uint64_t local_player_address()
-	{
-		if (!game::players.address)
-			return 0;
-
-		try
-		{
-			return memory->read<std::uint64_t>(game::players.address + Offsets::Player::LocalPlayer);
-		}
-		catch (...) {}
-
-		return 0;
-	}
-
-	std::uint64_t local_humanoid_address()
+	math::vector3 get_local_head_position()
 	{
 		cache::entity_t local{};
 		{
@@ -121,7 +72,27 @@ namespace
 			local = cache::cached_local_player;
 		}
 
-		return local.humanoid.address;
+		auto head_it = local.parts.find("Head");
+		if (head_it != local.parts.end() && head_it->second.address != 0)
+		{
+			try
+			{
+				return memory->read<math::vector3>(head_it->second.address + Offsets::BasePart::Primitive + Offsets::Primitive::Position);
+			}
+			catch (...) {}
+		}
+
+		auto root_it = local.parts.find("HumanoidRootPart");
+		if (root_it != local.parts.end() && root_it->second.address != 0)
+		{
+			try
+			{
+				return memory->read<math::vector3>(root_it->second.address + Offsets::BasePart::Primitive + Offsets::Primitive::Position);
+			}
+			catch (...) {}
+		}
+
+		return { 0.0f, 0.0f, 0.0f };
 	}
 }
 
@@ -145,42 +116,46 @@ void rage::thirdperson::run()
 				continue;
 			}
 
-			const std::uint64_t player = local_player_address();
-			if (!player)
+			if (!game::camera || game::camera == 0)
 			{
 				if (was_enabled)
+				{
 					restore_all();
+					was_enabled = false;
+				}
 
-				was_enabled = false;
 				std::this_thread::sleep_for(std::chrono::milliseconds(50));
 				continue;
 			}
 
-			capture_player_original(player);
+			capture_camera_original();
 			was_enabled = true;
 
 			const float distance = std::clamp(settings::rage::thirdperson::distance, 2.0f, 30.0f);
-			const float max_distance = (std::max)(distance, distance + 0.1f);
+			const float height_offset = std::clamp(settings::rage::thirdperson::height_offset, -5.0f, 10.0f);
 
-			memory->write<std::int32_t>(player + Offsets::Player::CameraMode, 0);
-			memory->write<float>(player + Offsets::Player::MinZoomDistance, distance);
-			memory->write<float>(player + Offsets::Player::MaxZoomDistance, max_distance);
+			// Set camera to Scriptable mode (1) — we want full control
+			memory->write<std::int32_t>(game::camera + Offsets::Camera::CameraType, 1);
 
-			const std::uint64_t humanoid = local_humanoid_address();
-			if (humanoid)
-			{
-				capture_humanoid_original(humanoid);
+			// Get camera rotation & forward vector
+			math::matrix3 cam_rot = memory->read<math::matrix3>(game::camera + Offsets::Camera::Rotation);
+			math::vector3 cam_forward = cam_rot.forward();
 
-				const float height = std::clamp(settings::rage::thirdperson::height_offset, -5.0f, 10.0f);
-				memory->write<math::vector3>(humanoid + Offsets::Humanoid::CameraOffset, math::vector3{ 0.0f, height, 0.0f });
-			}
-			else
-			{
-				restore_humanoid();
-				g_state.humanoid = 0;
-			}
+			// Get local character head/root position
+			math::vector3 head_pos = get_local_head_position();
 
-			std::this_thread::sleep_for(std::chrono::milliseconds(25));
+			// Calculate camera position: head - (forward * distance) + (up * height_offset)
+			math::vector3 cam_position = head_pos - (cam_forward * distance);
+			cam_position.y += height_offset;
+
+			// Keep camera rotation same as player camera
+			math::matrix3 cam_rotation = cam_rot;
+
+			// Write camera position & rotation directly (like CS2)
+			memory->write<math::vector3>(game::camera + Offsets::Camera::Position, cam_position);
+			memory->write<math::matrix3>(game::camera + Offsets::Camera::Rotation, cam_rotation);
+
+			std::this_thread::sleep_for(std::chrono::milliseconds(15));
 		}
 		catch (...)
 		{
