@@ -6,6 +6,25 @@ This is the V2 rewrite. The whole thing was rebuilt from scratch with a modular 
 
 > **For educational and research purposes only.** This project reads memory from a running Roblox process to demonstrate how external overlays work. It does not inject anything into the game. Using it in games may violate their Terms of Service. You are responsible for what you do with it.
 
+## V1 vs V2
+
+This is the V2 rewrite. The original lives at
+[senator-roblox-external](https://github.com/wisnurafi/senator-roblox-external) —
+it works, but it's legacy: the overlay hooks Discord's window (so Discord must
+be running with overlay enabled) and offsets are refreshed by hand. V2 was
+rebuilt from scratch to fix exactly that.
+
+| | V1 (`senator-roblox-external`) | V2 (`senator-external-new`, this repo) |
+|---|---|---|
+| Overlay | Hooks Discord's overlay window — Discord must be running | Own standalone DirectX 11 window |
+| Offsets | Manual `offsets.h` refresh when Roblox updates | Auto-fetch from remote service, local fallback |
+| Architecture | Cache / feature / overlay threads | Modular feature registry |
+| Game support | Per-feature keybinds, some game-specific bits | Auto-detected per-game profiles |
+| Config | `c:\config\*.cfg` | JSON configs + `autoload.txt` |
+| Status | Legacy — superseded | Active (v1.0.0) |
+
+If you're starting fresh, use this repo. V1 stays up for history.
+
 ## What it does
 
 Senator External reads memory from the Roblox player process and draws an overlay window on top of it. The overlay is a separate process, so nothing gets injected into the game itself.
@@ -118,6 +137,14 @@ SenatorExternalV2/
     utils/                  Network utilities
     wallcheck/              OBB-based wall checking
 ```
+
+## Project docs
+
+- `CONTRIBUTING.md` — building, adding a feature module, per-game profiles
+- `PRIVACY.md` — the one network call this tool makes (offset fetch), and nothing else
+- `SECURITY.md` — how to report vulnerabilities
+- `roadmap.txt` — where it's heading, and what's out of scope
+- `RELEASE_NOTES_v1.0.0.md` — what's in the first public release
 
 ## License
 

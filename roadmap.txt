@@ -1,0 +1,36 @@
+Senator External (V2) roadmap
+===========================
+Last updated: 2026-10-12
+
+V2 is a from-scratch rewrite and v1.0.0 is out. What follows is
+direction, not a promise — this is a side project and the order
+shifts with whatever game I'm actually playing.
+
+DONE (v1.0.0)
+-------------
+- Standalone DirectX 11 overlay (no more Discord overlay dependency)
+- Modular feature registry: aimbot, ESP, movement, rage, exploits,
+  lighting, triggerbot, misc
+- Per-game auto-detected profiles (6 titles)
+- Remote offset fetching with local fallback
+- JSON configs with autoload
+
+NEXT
+----
+- More per-game profiles. The framework is there; new titles are
+  mostly data.
+- Offset resilience: better handling of stale/partial offset
+  payloads, clearer UI when the service is unreachable.
+- Config UX: per-game config auto-switching alongside profile
+  detection.
+- Stream-proof coverage for new overlay elements as features land.
+
+EXPLICITLY OUT OF SCOPE
+-----------------------
+- Injection, hooks, or anything that patches the game process.
+  External observation only — that's the project's identity.
+- Kernel drivers.
+- Bypassing anti-cheat. If a game hardens, the answer is "it stops
+  working there", not an arms race.
+- Auto-updating binaries. You build from source or you download a
+  release; the tool never updates itself.
